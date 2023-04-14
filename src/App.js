@@ -101,7 +101,7 @@ function App() {
     getClickInfo();
     fetchGeoDatas();
 
-  }, [counterRef]);
+  }, [counterRef,db]);
 
   const handleIncreaseCounter = async () => {
     const docSnap = await getDoc(counterRef);
