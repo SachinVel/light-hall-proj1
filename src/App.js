@@ -81,6 +81,17 @@ function App() {
       setTotalCount(data.totalClicks);
     }
 
+    const fetchGeoDatas = async () => {
+      const q = query(collection(db, "geoData"));
+  
+      const querySnapshot = await getDocs(q);
+      let curArr = [];
+      querySnapshot.forEach((doc) => {
+        curArr.push(doc.data());
+      });
+      setMarkerArr(curArr);
+    }
+
     if (!navigator.geolocation) {
       setIsLocationSupported(false);
     } else {
@@ -88,9 +99,9 @@ function App() {
     }
 
     getClickInfo();
-    fetchGeoData();
+    fetchGeoDatas();
 
-  }, [counterRef,fetchGeoData]);
+  }, [counterRef]);
 
   const handleIncreaseCounter = async () => {
     const docSnap = await getDoc(counterRef);
