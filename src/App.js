@@ -110,7 +110,7 @@ function App() {
 
       const querySnapshot = await getDocs(q);
       let curArr = [];
-      querySnapshot.forEach((doc) => {
+      await querySnapshot.forEach((doc) => {
         let curData = doc.data();
         curData.id = doc.id;
         curArr.push(curData);
@@ -148,20 +148,17 @@ function App() {
       if (locSnap.exists()) {
         let curData = locSnap.data();
         curData.clicks = curData.clicks + 1;
-        setDoc(locRef, curData);
+        await setDoc(locRef, curData);
       } else {
         let curData = {
           lat: lat,
           long: long,
           clicks: 1
         };
-        setDoc(locRef, curData);
+        await setDoc(locRef, curData);
       }
 
       await fetchGeoData();
-
-      console.log('curid : ', curLocDocId);
-      document.getElementById(curLocDocId).click();
 
     }
 
@@ -171,26 +168,26 @@ function App() {
     <div className="App">
 
       <Box className='list-container'>
-        <List  className='submit-list' >
+        <List className='submit-list' >
           <ListItem sx={{
             fontSize: "20px",
             fontWeight: "bold"
           }}>Submitted by : </ListItem>
-          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/> Name : Sachin Velmurugan</ListItem>
-          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>Email : velsachin98@gmail.com</ListItem>
-          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>Portfolio : &nbsp;<a href='https://sachinvel.github.io/portfolio/'>link</a></ListItem>
+          <ListItem><CircleIcon sx={{ fontSize: '10px', marginRight: "5px" }} /> Name : Sachin Velmurugan</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize: '10px', marginRight: "5px" }} />Email : velsachin98@gmail.com</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize: '10px', marginRight: "5px" }} />Portfolio : &nbsp;<a href='https://sachinvel.github.io/portfolio/'>link</a></ListItem>
         </List>
-        <List  className='note-list'>
+        <List className='note-list'>
           <ListItem sx={{
             fontSize: "20px",
             fontWeight: "bold"
           }}>Notes : </ListItem>
-          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>Click on marker to view how many clicks occured in that area.</ListItem>
-          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>If you can't find your current marker. zoom in to find.</ListItem>
-          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>Counter is updated real time. Increasing counter somewhere will reflect here without refreshing.</ListItem>
-          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>Mobile Friendly</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize: '10px', marginRight: "5px" }} />Click on marker to view how many clicks occured in that area.</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize: '10px', marginRight: "5px" }} />If you can't find your current marker. zoom in to find.</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize: '10px', marginRight: "5px" }} />Counter is updated real time. Increasing counter somewhere will reflect here without refreshing.</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize: '10px', marginRight: "5px" }} />Mobile Friendly</ListItem>
         </List>
-        
+
       </Box>
       {
         totalCount !== null &&
