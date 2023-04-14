@@ -1,50 +1,166 @@
-import React, { Component } from "react"
-import logo from "./logo.svg"
-import "./App.css"
+import { useEffect, useState } from 'react';
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, getDoc, setDoc, query, collection, getDocs } from "firebase/firestore";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import RoomIcon from '@mui/icons-material/Room';
+import L from 'leaflet';
 
-class LambdaDemo extends Component {
-  constructor(props) {
-    super(props)
-    this.state = { loading: false, msg: null }
+
+import './App.css';
+import { Button, Typography } from '@mui/material';
+import { Box } from '@mui/system';
+
+import './App.css';
+import "leaflet/dist/leaflet.css";
+
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png')
+});
+
+
+function App() {
+
+  const [totalCount, setTotalCount] = useState(null);
+  const [markerArr, setMarkerArr] = useState([]);
+  const [isLocationSupported, setIsLocationSupported] = useState(true);
+  const [isPermissionDenied, setIsPermissionDenied] = useState(false);
+  const [lat, setLat] = useState(null);
+  const [long, setLong] = useState(null);
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDJjiMhDEeosN2FHc1TIC4mrWeHuCS_i2s",
+    authDomain: "lighthall-134f1.firebaseapp.com",
+    projectId: "lighthall-134f1",
+    storageBucket: "lighthall-134f1.appspot.com",
+    messagingSenderId: "698904814410",
+    appId: "1:698904814410:web:89614660c0d088150757b3",
+    measurementId: "G-GZQTRBPK4X"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const counterRef = doc(db, "clickInfo", "counter");
+
+  const centerPos = [47.116386, -101.299591];
+
+  const onSuccessLocation = (position) => {
+
+    console.log('pos : ',position);
+    let latitude = position.coords.latitude;
+    let longitude = position.coords.longitude;
+    latitude = Math.trunc(latitude * 100) / 100;
+    longitude = Math.trunc(longitude * 100) / 100;
+    setLat(latitude);
+    setLong(longitude);
+
   }
 
-  handleClick = api => e => {
-    e.preventDefault()
-
-    this.setState({ loading: true })
-    fetch("/.netlify/functions/" + api)
-      .then(response => response.json())
-      .then(json => this.setState({ loading: false, msg: json.msg }))
+  const onErrorLocation = (position) => {
+    console.log('onErrorLocation')
+    setIsPermissionDenied(true);
   }
 
-  render() {
-    const { loading, msg } = this.state
+  const fetchGeoData = async () => {
+    const q = query(collection(db, "geoData"));
 
-    return (
-      <p>
-        <button onClick={this.handleClick("hello")}>{loading ? "Loading..." : "Call Lambda"}</button>
-        <button onClick={this.handleClick("async-dadjoke")}>{loading ? "Loading..." : "Call Async Lambda"}</button>
-        <br />
-        <span>{msg}</span>
-      </p>
-    )
+    const querySnapshot = await getDocs(q);
+    let curArr = [];
+    querySnapshot.forEach((doc) => {
+      curArr.push(doc.data());
+    });
+    setMarkerArr(curArr);
   }
+
+
+  useEffect(() => {
+
+    const getClickInfo = async () => {
+      const docSnap = await getDoc(counterRef);
+      let data = docSnap.data();
+      setTotalCount(data.totalClicks);
+    }
+
+    if (!navigator.geolocation) {
+      setIsLocationSupported(false);
+    } else {
+      navigator.geolocation.getCurrentPosition(onSuccessLocation, onErrorLocation);
+    }
+
+    getClickInfo();
+    fetchGeoData();
+
+  }, []);
+
+  const handleIncreaseCounter = async () => {
+    const docSnap = await getDoc(counterRef);
+    let data = docSnap.data();
+    let newCount = data.totalClicks + 1;
+    setDoc(counterRef, {
+      totalClicks: data.totalClicks + 1
+    });
+    setTotalCount(newCount);
+
+    if (isLocationSupported && !isPermissionDenied && lat!==null && long!==null) {
+      let curLocDocId = 'A' + lat + 'B' + long;
+      let locRef = doc(db, "geoData", curLocDocId);
+      const locSnap = await getDoc(locRef);
+
+      if (locSnap.exists()) {
+        let curData = locSnap.data();
+        curData.clicks = curData.clicks + 1;
+        setDoc(locRef, curData);
+      } else {
+        let curData = {
+          lat: lat,
+          long: long,
+          clicks: 1
+        };
+        setDoc(locRef, curData);
+      }
+
+      fetchGeoData();
+
+    }
+
+  }
+
+  return (
+    <div className="App">
+      {
+        totalCount !== null &&
+        <Box className="counter-container">
+          <Typography sx={{
+            fontSize: "30px",
+            color: "red"
+          }}>{totalCount}</Typography>
+          <br></br>
+          <Button variant='contained' onClick={() => { handleIncreaseCounter() }}>Increase Counter</Button>
+        </Box>
+      }
+
+      <MapContainer center={centerPos} zoom={3} scrollWheelZoom={false} className="map-container">
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {
+          markerArr.length > 0 &&
+          markerArr.map((loc) => {
+            let position = [loc.lat, loc.long];
+            let clickInfo = 'Clicks : '+loc.clicks;
+            return (
+              <Marker position={position} key={position}>
+                <Popup>{clickInfo}</Popup>
+              </Marker>
+            )
+          })
+        }
+      </MapContainer>
+
+    </div>
+  );
 }
 
-class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <LambdaDemo />
-        </header>
-      </div>
-    )
-  }
-}
-
-export default App
+export default App;
