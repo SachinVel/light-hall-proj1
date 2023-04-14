@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc, query, collection, getDocs } from "firebase/firestore";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import RoomIcon from '@mui/icons-material/Room';
 import L from 'leaflet';
 
 
@@ -91,7 +90,7 @@ function App() {
     getClickInfo();
     fetchGeoData();
 
-  }, []);
+  }, [counterRef,fetchGeoData]);
 
   const handleIncreaseCounter = async () => {
     const docSnap = await getDoc(counterRef);
