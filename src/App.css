@@ -1,29 +1,65 @@
-
-.App{
+.App {
   position: absolute;
   top: 50%;
   left: 50%;
   width: 100%;
-  transform: translate(-50%,-50%);
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow: scroll;
 }
-.counter-container{
-  
+
+.counter-container {
+
   display: flex;
   flex-direction: column;
   align-items: center;
   margin: 20px 0px;
 }
 
-.counter{
+.counter {
   font-size: 20px;
 }
 
-.map-container{
+.map-container {
   min-width: 600px;
   width: 70%;
   min-height: 400px;
   height: 70%;
+}
+
+.marker--selected{
+  color: red;
+}
+
+.list-container{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 80%;
+}
+.submit-list{
+  width: 30%;
+  min-width: 300px;
+  text-align: center;
+  display: "list-item"
+}
+
+.note-list{
+  width: 50%;
+  min-width: 300px;
+  display: "list-item"
+}
+
+@media only screen and (max-width: 600px) {
+  .map-container {
+    min-width: 300px;
+    width: 70%;
+    min-height: 300px;
+    height: 70%;
+  }
+  .list-container{
+    flex-direction: column;
+  }
 }

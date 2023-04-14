@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, getDoc, setDoc, query, collection, getDocs } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc, query, collection, getDocs, onSnapshot } from "firebase/firestore";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+import { List, ListItem } from '@mui/material';
+import CircleIcon from '@mui/icons-material/Circle';
 
 
 import './App.css';
 import { Button, Typography } from '@mui/material';
 import { Box } from '@mui/system';
+import Alert from '@mui/material/Alert';
 
 import './App.css';
 import "leaflet/dist/leaflet.css";
@@ -29,6 +32,7 @@ function App() {
   const [lat, setLat] = useState(null);
   const [long, setLong] = useState(null);
 
+
   const firebaseConfig = {
     apiKey: "AIzaSyDJjiMhDEeosN2FHc1TIC4mrWeHuCS_i2s",
     authDomain: "lighthall-134f1.firebaseapp.com",
@@ -44,9 +48,14 @@ function App() {
 
   const centerPos = [47.116386, -101.299591];
 
+
+  onSnapshot(doc(db, "clickInfo", "counter"), (doc) => {
+    let newCount = doc.data().totalClicks;
+    setTotalCount(newCount);
+  });
+
   const onSuccessLocation = (position) => {
 
-    console.log('pos : ',position);
     let latitude = position.coords.latitude;
     let longitude = position.coords.longitude;
     latitude = Math.trunc(latitude * 100) / 100;
@@ -57,7 +66,6 @@ function App() {
   }
 
   const onErrorLocation = (position) => {
-    console.log('onErrorLocation')
     setIsPermissionDenied(true);
   }
 
@@ -66,14 +74,30 @@ function App() {
 
     const querySnapshot = await getDocs(q);
     let curArr = [];
-    querySnapshot.forEach((doc) => {
-      curArr.push(doc.data());
+    await querySnapshot.forEach((doc) => {
+      let curData = doc.data();
+      curData.id = doc.id;
+      curArr.push(curData);
     });
     setMarkerArr(curArr);
+
   }
 
 
   useEffect(() => {
+
+    let firebaseConfig = {
+      apiKey: "AIzaSyDJjiMhDEeosN2FHc1TIC4mrWeHuCS_i2s",
+      authDomain: "lighthall-134f1.firebaseapp.com",
+      projectId: "lighthall-134f1",
+      storageBucket: "lighthall-134f1.appspot.com",
+      messagingSenderId: "698904814410",
+      appId: "1:698904814410:web:89614660c0d088150757b3",
+      measurementId: "G-GZQTRBPK4X"
+    };
+    let app = initializeApp(firebaseConfig);
+    let db = getFirestore(app);
+    let counterRef = doc(db, "clickInfo", "counter");
 
     const getClickInfo = async () => {
       const docSnap = await getDoc(counterRef);
@@ -83,13 +107,16 @@ function App() {
 
     const fetchGeoDatas = async () => {
       const q = query(collection(db, "geoData"));
-  
+
       const querySnapshot = await getDocs(q);
       let curArr = [];
       querySnapshot.forEach((doc) => {
-        curArr.push(doc.data());
+        let curData = doc.data();
+        curData.id = doc.id;
+        curArr.push(curData);
       });
       setMarkerArr(curArr);
+
     }
 
     if (!navigator.geolocation) {
@@ -101,9 +128,10 @@ function App() {
     getClickInfo();
     fetchGeoDatas();
 
-  }, [counterRef,db]);
+  }, []);
 
   const handleIncreaseCounter = async () => {
+
     const docSnap = await getDoc(counterRef);
     let data = docSnap.data();
     let newCount = data.totalClicks + 1;
@@ -112,7 +140,7 @@ function App() {
     });
     setTotalCount(newCount);
 
-    if (isLocationSupported && !isPermissionDenied && lat!==null && long!==null) {
+    if (isLocationSupported && !isPermissionDenied && lat !== null && long !== null) {
       let curLocDocId = 'A' + lat + 'B' + long;
       let locRef = doc(db, "geoData", curLocDocId);
       const locSnap = await getDoc(locRef);
@@ -130,7 +158,10 @@ function App() {
         setDoc(locRef, curData);
       }
 
-      fetchGeoData();
+      await fetchGeoData();
+
+      console.log('curid : ', curLocDocId);
+      document.getElementById(curLocDocId).click();
 
     }
 
@@ -138,6 +169,29 @@ function App() {
 
   return (
     <div className="App">
+
+      <Box className='list-container'>
+        <List  className='submit-list' >
+          <ListItem sx={{
+            fontSize: "20px",
+            fontWeight: "bold"
+          }}>Submitted by : </ListItem>
+          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/> Name : Sachin Velmurugan</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>Email : velsachin98@gmail.com</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>Portfolio : &nbsp;<a href='https://sachinvel.github.io/portfolio/'>link</a></ListItem>
+        </List>
+        <List  className='note-list'>
+          <ListItem sx={{
+            fontSize: "20px",
+            fontWeight: "bold"
+          }}>Notes : </ListItem>
+          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>Click on marker to view how many clicks occured in that area.</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>If you can't find your current marker. zoom in to find.</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>Counter is updated real time. Increasing counter somewhere will reflect here without refreshing.</ListItem>
+          <ListItem><CircleIcon sx={{ fontSize :'10px', marginRight:"5px"}}/>Mobile Friendly</ListItem>
+        </List>
+        
+      </Box>
       {
         totalCount !== null &&
         <Box className="counter-container">
@@ -146,11 +200,21 @@ function App() {
             color: "red"
           }}>{totalCount}</Typography>
           <br></br>
-          <Button variant='contained' onClick={() => { handleIncreaseCounter() }}>Increase Counter</Button>
+          {<Button variant='contained' onClick={() => { handleIncreaseCounter() }}>Increase Counter</Button>}
         </Box>
       }
 
-      <MapContainer center={centerPos} zoom={3} scrollWheelZoom={false} className="map-container">
+      {
+        (!isLocationSupported || isPermissionDenied) &&
+        <>
+          <Alert severity="error">Unable to collect location data : change browser or allow location permision.</Alert>
+          <br></br>
+          <br></br>
+        </>
+
+      }
+
+      <MapContainer center={centerPos} zoom={3} scrollWheelZoom={true} className="map-container">
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -159,15 +223,18 @@ function App() {
           markerArr.length > 0 &&
           markerArr.map((loc) => {
             let position = [loc.lat, loc.long];
-            let clickInfo = 'Clicks : '+loc.clicks;
+            let clickInfo = 'Clicks : ' + loc.clicks;
             return (
-              <Marker position={position} key={position}>
+
+              <Marker position={position} key={position} id={loc.id}>
                 <Popup>{clickInfo}</Popup>
               </Marker>
             )
           })
         }
       </MapContainer>
+
+
 
     </div>
   );
